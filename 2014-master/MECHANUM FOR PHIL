@@ -1,0 +1,296 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2008. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
+package edu.wpi.first.wpilibj.templates;
+
+import java.lang.*;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Jaguar;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Gyro;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.Talon;
+
+
+//Mecanum class. We are using IterativeRobot as SimpleRobot was not working.
+
+
+public class RobotTemplate extends IterativeRobot {
+    //Global Settings:
+    //PWN Positions
+    private  final int FRONT_LEFT_PWM = 3;
+    private  final int FRONT_RIGHT_PWM = 1; //1
+    private final int REAR_LEFT_PWM = 4;
+    private  final int REAR_RIGHT_PWM = 2;
+    
+    //Joystick Threshold
+    private  final double THRESHOLD = 0.2;
+    private final double variable = .001;
+    private final double variable1 = -.001;
+    
+    //Get the joysticks (keep joy* naming system so it can be adjusted later)
+    //Joystick joy1 = new Joystick(1);
+    Joystick joy2 = new Joystick(2);
+    Joystick joy3 = new Joystick(3);
+    Joystick joy1 = new Joystick(1);
+   
+    //Get the jaguars
+    Jaguar front_right = new Jaguar(FRONT_RIGHT_PWM);
+    Jaguar front_left = new Jaguar(FRONT_LEFT_PWM);
+    Talon rear_right = new Talon(REAR_RIGHT_PWM);
+    Talon rear_left = new Talon(REAR_LEFT_PWM);
+    
+    //Setup RobotDrive
+    RobotDrive drive = new RobotDrive(front_right, rear_right, front_left, rear_left);
+    
+    
+    double KP = 0.03;
+    
+    //Solenoids
+     Solenoid Shooter_down = new Solenoid(RobotMap.INDEXER_DOWN_RELAY_PORT);
+     Solenoid Shooter_up = new Solenoid(RobotMap.INDEXER_UP_RELAY_PORT);
+     Solenoid shootplatform_up_solenoid = new Solenoid(RobotMap.HARVESTER_RELAY_UP);
+     Solenoid shootplatform_down_solenoid = new Solenoid(RobotMap.HARVESTER_RELAY_DOWN);
+     Compressor compressor = new Compressor(RobotMap.COMPRESSOR_RELAY,RobotMap.COMPRESSOR_ONOFF_CHECK_IO_PORT);
+     //Gyro gyro = new Gyro(1);
+    // Encoder rightEncoder = new Encoder(1,1,1,2,true,CounterBase.EncodingType.k4X);
+     
+     
+     
+     //Encoder leftEncoder = new Encoder(2,2,3,4,true,CounterBase.EncodingType.k4X);
+    
+        
+    //Button button1L = new JoystickButton(joy1, 1);
+    
+
+    
+    //When robot starts
+    public void robotInit() {
+        
+        
+      //  leftEncoder.start();
+      //  rightEncoder.start();
+    }
+    
+    //When robot is disabled
+    public void disabledInit() {
+        //Stop the motors for safety
+        front_left.set(0);
+        rear_left.set(0);
+        front_right.set(0);
+        rear_right.set(0);
+        //Log disabled status
+        
+    }
+
+    //Periodically called during autonomous
+    public void autonomousPeriodic() {
+      //  gyro.reset();
+       while (isAutonomous()) {
+           //double angle = gyro.getAngle();
+         //  drive.drive(-1.0, -angle*KP);
+           //Timer.delay(0.004);
+       }
+       
+        drive.drive(1.0, 0.0);
+        Timer.delay(1.0);
+        drive.drive(0.0, 1.0);
+       
+        
+    }
+    
+    //When robot is started in autonomous
+    public void autonomousInit() {
+       
+       
+       
+    }
+    
+    //Called at the start of teleop
+    public void teleopInit() {
+        //Log initiation success
+        compressor.start();
+    }
+    
+    //Periodically called during teleop
+    public void teleopPeriodic() {
+      while(isEnabled()){
+           
+          // System.out.println("lE="+leftEncoder.get()+ "rE ="+rightEncoder.get());            
+           // System.out.println(gyro.getAngle());
+            //Timer.delay(1.0);
+           
+           if(joy1.getRawButton(1))
+        {
+            shootplatform_down_solenoid.set(false);
+            shootplatform_up_solenoid.set(true);
+            SmartDashboard.putNumber("Indexer: ",1);
+            Timer.delay(1.0);
+        }
+        else {
+                
+            shootplatform_down_solenoid.set(true);
+            shootplatform_up_solenoid.set(false);
+            SmartDashboard.putNumber("Indexer: ", 0);
+        
+            
+            // Shoot platform up and down
+        }
+        if (joy1.getRawButton(3)) {
+            Shooter_up.set(false);
+            Shooter_down.set(true);
+            SmartDashboard.putString("Platform: ","Up"); 
+        } 
+         if (joy1.getRawButton(2)) {
+            Shooter_up.set(true);
+            Shooter_down.set(false);
+            SmartDashboard.putString("Platform: ","Down");
+        }
+       
+       
+       
+       
+           
+            double Y, X, Z;
+        //Check if using iOS interface or not
+        
+        
+            //Standard controls
+            //X = joy1.getRawAxis(1);
+            //Y = joy1.getRawAxis(2);
+            //Z = XboxRead(joy1,4);
+            //
+                
+            Y = joy1.getRawAxis(1);
+            X = joy1.getRawAxis(2);
+            Z = XboxRead(joy1,4);
+            
+            
+                 // Y = Y * -1;
+                  //return Y;
+    if(Math.abs(Y) != 0){
+        
+            drive.setExpiration(0.1);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontLeft,true);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontRight,true);
+        Timer.delay(.001);
+        Y = 0;
+        
+        
+    }
+    else{
+        
+            drive.setExpiration(0.1);
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearLeft,true);
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearRight,true);
+        Timer.delay(.001);
+        Y = 0;
+        
+        
+    }
+    
+        //Threshold
+        if( Math.abs(X) < THRESHOLD ){
+            X = 0;
+        }
+        if( Math.abs(Y) < THRESHOLD ){
+            Y = 0;
+        }
+        if( Math.abs(Z) < THRESHOLD ){
+            Z = 0;
+        }
+        //Get the magnitude using the distance formula
+        double magnitude = Math.sqrt((X*X)+(Y*Y));
+        //Normalize the value
+        if( magnitude > 1 ){
+            magnitude = 1;
+            
+        }
+        
+        
+        //System.out.println("x: " +X + "  y: " + Y + "  z: " + Z) ;
+        //System.out.println("magnitude: " +magnitude);
+        System.out.println("Direction: " + joy1.getDirectionDegrees());
+        //Drive
+        //drive.mecanumDrive_Cartesian(X, Z, KP, THRESHOLD);
+    drive.mecanumDrive_Polar(magnitude,fixDirection(joy1) , Z);  
+      
+      
+      
+      
+}
+    
+    }
+       
+    private double XboxRead(Joystick joy1,int axis)
+    {
+        double value;
+        value = joy1.getRawAxis(axis);
+        
+        if ((value < .3) && (value > 0)) value = 0;
+        if ((value < 0) && (value > .3)) value = 0;
+        
+        
+        //value = value *.35;
+        return value;
+    }
+    
+    
+    private double fixDirection(Joystick joy1)
+    {
+        double direction;
+        
+        direction = joy1.getDirectionDegrees();
+        
+        //right
+        if ((direction > 67.5) && (direction < 112.5)) 
+                {direction = 90; }
+            
+        // right up diagonal
+        if ((direction > 22.5) && (direction < 67.5))
+                {direction = 45; }
+        
+        // right down diagonal
+        if ((direction > 112.5) && (direction < 157.5))
+                {direction = 135; }
+     
+        //down
+        if (((direction > 157.5) && (direction < 180)) ||
+                ((direction <-157.5) && (direction > -179.9)))
+                { direction = 180; }
+        
+        // down left diagonal
+        if ((direction < -112.5) && (direction > -157.5))
+                {direction = -135; }
+        
+        //left
+        if ((direction < -67.5) && (direction > -112.5))               
+                { direction = -90; }
+        
+        // up left diagonal
+        if ((direction < -22.5) && (direction > -67.5))
+                {direction = -45; }
+        
+        
+        //up
+       if ((direction > -22.5) && (direction < 22.5)) 
+       { direction = 0; } 
+        
+        System.out.println("adjusted direction: " + direction);
+        return direction;
+    }
+    
+   
+    
+} //end class
+

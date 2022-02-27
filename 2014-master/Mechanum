@@ -1,0 +1,240 @@
+package edu.wpi.first.wpilibj.templates;
+
+import java.util.Date;
+import edu.wpi.first.wpilibj.CANJaguar;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Gyro;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.SmartDashboard;
+import edu.wpi.first.wpilibj.SpeedController;
+import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.can.CANTimeoutException;
+
+/**
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to each mode, as described in the IterativeRobot
+ * documentation. If you change the name of this class or the package after
+ * creating this project, you must also update the manifest file in the resource
+ * directory.
+ */
+public class RobotTemplate extends IterativeRobot {
+
+    private DriverStation ds;
+    private Date date;
+    private long start;
+    private boolean mDoOpp = false;
+    private RobotDrive mDrive;
+    private CANJaguar mCjRightFront;
+    private CANJaguar mCjLeftFront;
+    private CANJaguar mCjRightBack;
+    private CANJaguar mCjLeftBack;
+    private CANJaguar mVacMotor;
+    private CANJaguar mCjElbow;
+    private Joystick joy1;
+    // private Joystick joy2;
+    private boolean[] joy1Buttons = new boolean[12];
+    private String[] buttonStrings = {
+        "button0", "button1", "button2", "button3",
+        "button4", "button5", "button6", "button7",
+        "button8", "button9", "button10", "button11",};
+    // private boolean[] joy2Buttons = new boolean[12];
+    private double joy1X, joy1Y;
+    private Gyro gyro;
+    private double gyroAngle;
+
+    //  private DriverStationLCD screen;
+    // private RobotDrive waylandChas;
+    public void CJInit(CANJaguar cj) throws CANTimeoutException {
+        cj.setPID(-0.2, -0.01, -0.2);
+        cj.enableControl();
+        cj.configEncoderCodesPerRev(360);
+
+        cj.setSpeedReference(CANJaguar.SpeedReference.kQuadEncoder);
+        cj.setVoltageRampRate(3.0);
+        cj.configNeutralMode(CANJaguar.NeutralMode.kCoast);
+    }
+
+    public void ElbowInit(CANJaguar cj) throws CANTimeoutException {
+        cj.setPID(0.2, 0.005, 0.04);
+        cj.setSpeedReference(CANJaguar.SpeedReference.kQuadEncoder);
+        cj.configEncoderCodesPerRev(360);
+        cj.configNeutralMode(CANJaguar.NeutralMode.kCoast);
+        cj.configFaultTime(1.0);  // XXX units are what?
+        cj.enableControl();
+    }
+
+    public void robotInit() {
+        logMsg("enter robotInit");
+        ds = DriverStation.getInstance();
+        logMsg("ds says " + String.valueOf(ds.kJoystickPorts) + " joystick ports");
+        Watchdog.getInstance().setEnabled(false);
+        date = new Date();
+        start = date.getTime();
+        gyro = new Gyro(1, 1);
+        gyro.reset();
+        try {
+            SmartDashboard.init();
+            //    screen = new DriverStationLCD();
+
+            mCjLeftBack = new CANJaguar(4, CANJaguar.ControlMode.kSpeed);
+            mCjLeftFront = new CANJaguar(8, CANJaguar.ControlMode.kSpeed);
+            mCjRightFront = new CANJaguar(10, CANJaguar.ControlMode.kSpeed);
+            mCjRightBack = new CANJaguar(2, CANJaguar.ControlMode.kSpeed);
+            CJInit(mCjLeftBack);
+            CJInit(mCjRightBack);
+            CJInit(mCjLeftFront);
+            CJInit(mCjRightFront);
+
+            mVacMotor = new CANJaguar(7, CANJaguar.ControlMode.kVoltage);
+            // mCjElbow = new CANJaguar(0, CANJaguar.ControlMode.kPosition);
+
+            mDrive = new RobotDrive((SpeedController) mCjLeftFront,
+                    (SpeedController) mCjLeftBack,
+                    (SpeedController) mCjRightFront,
+                    (SpeedController) mCjRightBack);
+            mDrive.setMaxOutput(600);
+            mDrive.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, false);
+            mDrive.setInvertedMotor(RobotDrive.MotorType.kRearLeft, false);
+            mDrive.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
+            mDrive.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+        } catch (Exception e) {
+
+            logMsg("ERROR in robotInit!! ", e);
+            System.err.println("error in robotInit = " + e);
+            //e.printStackTrace();
+        }
+
+        joy1 = new Joystick(1);
+        //joy2 = new Joystick(2);
+
+    }
+
+    /**
+     * This function is called periodically during autonomous
+     */
+    public void autonomousPeriodic() {
+    }
+
+    /**
+     * This function is called periodically during operator control
+     */
+    public void teleopPeriodic() {
+        // debug code to see how time works
+        SmartDashboard.log(date.getTime() - start, "time");
+        // debug code to see how the joystick buttons work
+        for (int i = 0; i < 12; i++) {
+            boolean b = joy1.getRawButton(i);
+            // if (b != joy1Buttons[i])
+            {
+                SmartDashboard.log(b, buttonStrings[i]);
+                joy1Buttons[i] = b;
+            }
+        }
+
+        // debug code to see how the joystick works
+        {
+            double x = joy1.getX();
+            //if (x != joy1X)
+            {
+                joy1X = x;
+                SmartDashboard.log(joy1X, "Joy1X");
+            }
+        }
+        {
+            double y = joy1.getY();
+            //if (y != joy1Y)
+            {
+                joy1Y = y;
+                SmartDashboard.log(joy1Y, "Joy1Y");
+            }
+        }
+        // debug code to see how the gyro works
+        {
+            double angle = gyro.getAngle();
+            if (angle != gyroAngle) {
+                gyroAngle = angle;
+                SmartDashboard.log(gyroAngle, "gyro");
+            }
+        }
+        if (joy1Buttons[1]) {
+
+
+            joy1X = joy1.getX();
+            joy1Y = joy1.getY();
+            // include a dead band to stop motors
+            if ((-0.1 < joy1X) && (joy1X < 0.1)) {
+                joy1X = 0.0;
+            }
+            if ((-0.1 < joy1Y) && (joy1Y < 0.1)) {
+                joy1Y = 0.0;
+            }
+            try {
+                /*
+                    mCjLeftFront.setX(joy1X * 200.0);
+                    mCjLeftBack.setX(joy1X * 100.0);
+                    mCjRightFront.setX(joy1Y * 200.0);
+                    mCjRightBack.setX(joy1Y * 100.0);
+                 *
+                 */
+                mDrive.mecanumDrive_Cartesian(joy1X, joy1Y, 0.0, 0.0);
+                SmartDashboard.log(mCjLeftFront.getSpeed(), "Left Front Speed");
+                SmartDashboard.log(mCjLeftFront.getOutputCurrent(), "Left Front Amps");
+                SmartDashboard.log(mCjRightFront.getSpeed(), "Right Front Speed");
+                SmartDashboard.log(mCjRightFront.getOutputCurrent(), "Right Front Amps");
+                SmartDashboard.log(mCjLeftBack.getSpeed(), "Left Back Speed");
+                SmartDashboard.log(mCjLeftBack.getOutputCurrent(), "Left Back Amps");
+                SmartDashboard.log(mCjRightBack.getSpeed(), "Right Back Speed");
+                SmartDashboard.log(mCjRightBack.getOutputCurrent(), "Right Back Amps");
+            } catch (Exception e) {
+                SmartDashboard.log("error", "sup dawg");
+                logMsg("error sending drive command", e);
+                e.printStackTrace();
+            }
+        }
+        else //no trigger = stop drive
+        {
+            try {
+                mDrive.mecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
+            }
+            catch (Exception e){
+                logMsg("error stopping drive on trigger-off", e);
+                e.printStackTrace();
+            }
+
+        }
+
+    }
+
+    public void disabledInit() {
+        logMsg("disabledInit");
+        // mDrive.stopMotor();
+    }
+
+    public void logMsg(String s) {
+        logMsg(s, null);
+    }
+
+    public void logMsg(Exception e) {
+        logMsg(null, e);
+    }
+
+    public void logMsg(String s, Exception e) {
+        String label = "[MSG]";
+        if (e != null) {
+            label = "[ERROR]";
+        }
+        String msg = (s == null) ? "" : s;
+
+        if (e != null) {
+            msg += e.getMessage();
+        }
+        SmartDashboard.log(msg, label);
+        System.out.println(label + ":" + msg);
+        if (e != null) {
+            e.printStackTrace();
+        }
+    }
+}
+
